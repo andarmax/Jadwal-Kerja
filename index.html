@@ -3,22 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOMBOK_IJO // AUTO SCHEDULE AI</title>
-<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<title>LOMBOK IJO SYSTEM - ANDAR</title>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#000;color:#00ff41;font-family:'Share Tech Mono',monospace;min-height:100vh}
+  body{background:#000;color:#00ff41;font-family:'Courier New',monospace;min-height:100vh}
   #matrix{position:fixed;inset:0;z-index:0;opacity:.15}
   .wrap{position:relative;z-index:10;max-width:600px;margin:auto;padding:14px}
-  .topbar{position:sticky;top:0;z-index:100;background:rgba(1,18,6,.95);border-bottom:1px solid #00ff41;padding:12px 14px;display:flex;justify-content:space-between}
-  .online{border:1px solid #00ff41;padding:3px 8px;border-radius:99px;font-size:11px}
+  .topbar{position:sticky;top:0;z-index:100;background:rgba(1,18,6,.95);border-bottom:1px solid #00ff41;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .online{border:1px solid #00ff41;padding:4px 8px;border-radius:99px;font-size:11px;white-space:nowrap}
+  .livebox{text-align:right;line-height:1.4}
+  .livebox b{font-size:15px;color:#fff;letter-spacing:1px}
+  .livebox small{font-size:11px;color:#ffe600}
   .card{background:rgba(0,8,2,.92);border:1px solid #0a4a1a;border-radius:12px;padding:16px;margin-top:14px;box-shadow:0 0 30px rgba(0,255,65,.15)}
   h1{font-size:24px;line-height:1.1}
   h1 span{color:#fff}
   .meta{font-size:12px;line-height:1.8;color:#e8ffe8;margin-top:6px}
   .yellow{color:#ffe600;font-weight:bold}
-  .red{color:#ff2a2a;font-weight:bold}
   input,select{width:100%;background:#010f05;border:1px solid #1a6a2e;color:#00ff41;padding:11px;border-radius:10px;font-family:inherit;margin:6px 0;outline:none}
   input::placeholder{color:#4a7a5a}
   .btn{background:#00ff41;color:#000;border:0;padding:13px;border-radius:10px;font-weight:800;font-family:inherit;width:100%;cursor:pointer;margin-top:8px}
@@ -38,13 +39,13 @@
   .row:last-child{border-radius:0 0 10px 10px}
   .row.pagi{background:rgba(6,58,30,.75)}
   .row.libur{background:rgba(74,5,5,.9)}
+  .row.today{border-left:3px solid #ffe600;background:rgba(255,230,0,.08)}
   .row .l{flex:1}
   .row .t{font-weight:800}
   .row .j{font-size:11px;color:#aaffbb}
   .row.libur .t,.row.libur .j{color:#ff7a7a}
   .row .s{font-size:10px;text-align:right;min-width:90px;color:#7dff9a}
   .row input,.row select{padding:6px;font-size:12px;margin:2px 0}
-  .row .edit{display:flex;gap:4px;flex-wrap:wrap}
   .small{font-size:11px;color:#4a7a5a;text-align:center;margin-top:12px;line-height:1.7}
   .badge{display:inline-block;border:1px solid #00ff41;padding:3px 8px;border-radius:99px;font-size:11px;margin:4px 2px 0}
   details{margin-top:12px;font-size:12px}
@@ -54,25 +55,31 @@
 </head>
 <body>
 <canvas id="matrix"></canvas>
-<div class="topbar"><b>&gt; LOMBOK_IJO // AUTO-AI</b><span class="online">● ONLINE</span></div>
-<div class="wrap">
+<div class="topbar">
+  <div><b>&gt; LOMBOK IJO SYSTEM</b><br><span class="online">● ONLINE</span></div>
+  <div class="livebox">
+    <b id="liveTime">00:00:00</b><br>
+    <small id="liveDate">SENIN, 9 NOVEMBER 2026</small><br>
+    <small id="liveShift" style="color:#00ff41">SHIFT: -</small>
+  </div>
+</div>
 
-  <!-- STEP 1 -->
+<div class="wrap">
   <div class="card">
     <h1>JADWAL KERJA<br><span>AUTO-SCAN AI</span></h1>
-    <div class="meta">USER: <b id="userLabel">ANDAR</b> | ROLE: WAITER | AREA: DIPO<br>Upload foto jadwal baru → Sistem baca → Cuma ambil nama lu → Disusun otomatis</div>
-    <span class="badge">⚡ OCR + AI PARSER</span>
-    <span class="badge">🔒 FILTER: HANYA ANDAR</span>
+    <div class="meta">USER: <b id="userLabel">ANDAR</b> | ROLE: WAITER | AREA: DIPO<br>Upload foto jadwal baru, sistem baca, cuma ambil nama lu, disusun otomatis</div>
+    <span class="badge">AI OCR + PARSER</span>
+    <span class="badge">FILTER: HANYA ANDAR</span>
     <span class="badge" style="border-color:#ff2a2a;color:#ff9a9a">NAMA LAIN = DIBUANG</span>
 
     <label style="font-size:12px;margin-top:12px;display:block">1. NAMA LU (yang mau difilter):</label>
     <input id="namaFilter" value="ANDAR" placeholder="Contoh: ANDAR">
-    <label style="font-size:12px">2. BULAN / TAHUN:</label>
-    <div class="flex"><input id="bulan" value="DESEMBER"><input id="tahun" value="2026"></div>
+    <label style="font-size:12px">2. BULAN - TAHUN:</label>
+    <div class="flex"><input id="bulan" value="NOVEMBER"><input id="tahun" value="2026"></div>
 
     <label style="font-size:12px">3. UPLOAD FOTO JADWAL BARU:</label>
     <div class="drop" onclick="document.getElementById('file').click()">
-      <div id="dropText">📸 KLIK / DROP FOTO JADWAL DISINI<br><small style="color:#8affa8">Bisa foto dari kertas / screenshot grup WA</small></div>
+      <div id="dropText">KLIK - DROP FOTO JADWAL DISINI<br><small style="color:#8affa8">Bisa foto dari kertas - screenshot grup WA</small></div>
       <img id="preview" style="display:none">
       <input type="file" id="file" accept="image/*" hidden>
     </div>
@@ -81,20 +88,21 @@
     <div id="status" style="font-size:12px;color:#ffe600"></div>
 
     <div class="flex">
-      <button class="btn2" onclick="scanFoto()">🤖 SCAN OTOMATIS</button>
-      <button class="btn2" onclick="pakaiContoh()">📄 PAKAI CONTOH NOV</button>
+      <button class="btn2" onclick="scanFoto()">SCAN OTOMATIS</button>
+      <button class="btn2" onclick="pakaiContoh()">PAKAI CONTOH NOV</button>
     </div>
-    <button class="btn" onclick="downloadHTML()">⬇️ DOWNLOAD WEB INI (BUAT GITHUB)</button>
+    <button class="btn" onclick="downloadHTML()">DOWNLOAD WEB INI (BUAT GITHUB)</button>
 
-    <div class="log" id="log">> SYSTEM READY...\n> Menunggu foto jadwal...\n> Filter aktif: ANDAR only</div>
+    <div class="log" id="log">SYSTEM READY...
+Menunggu foto jadwal...
+Filter aktif: ANDAR only</div>
 
-    <details><summary>▶ Lihat hasil bacaan mentah (kalau salah, edit di bawah)</summary>
+    <details><summary>Lihat hasil bacaan mentah (kalau salah, edit di bawah)</summary>
       <textarea id="rawText" placeholder="Hasil OCR akan muncul disini, bisa lu edit manual..."></textarea>
-      <button class="btn2" onclick="parseManual()" style="width:100%;margin-top:8px">🔄 PARSE ULANG DARI TEKS INI</button>
+      <button class="btn2" onclick="parseManual()" style="width:100%;margin-top:8px">PARSE ULANG DARI TEKS INI</button>
     </details>
   </div>
 
-  <!-- STEP 2 -->
   <div class="card">
     <h1 style="font-size:20px">HASIL: <span id="judulHasil">NOVEMBER 2026 - ANDAR</span></h1>
     <div class="stats">
@@ -102,26 +110,41 @@
       <div class="stat"><b id="sJam">0</b><small>TOTAL JAM</small></div>
       <div class="stat"><b id="sLibur" style="color:#ff2a2a">0</b><small>LIBUR</small></div>
     </div>
-    <input id="search" placeholder="🔍 Cari... SABTU / BATIK / LIBUR" oninput="render()">
-    <div class="thead"><span>TGL &nbsp; HARI &nbsp; SHIFT &nbsp; JAM</span><span>SERAGAM</span></div>
+    <input id="search" placeholder="Cari... SABTU - BATIK - LIBUR" oninput="render()">
+    <div class="thead"><span>TGL - HARI - SHIFT - JAM</span><span>SERAGAM</span></div>
     <div id="list"></div>
 
     <div class="flex" style="margin-top:12px">
       <button class="btn2" onclick="tambahBaris()">+ TAMBAH HARI</button>
-      <button class="btn2" onclick="resetData()">↺ RESET</button>
+      <button class="btn2" onclick="resetData()">RESET</button>
     </div>
-    <button class="btn" onclick="window.print()">🖨️ PRINT / SAVE PDF</button>
-    <p class="small">Cara edit: Klik tanggal / shift / seragam langsung di tabel, langsung ke-save otomatis di HP lu.<br>Data tersimpan di browser, jadi kalau lu tutup web, jadwalnya gak hilang.</p>
+    <button class="btn" onclick="window.print()">PRINT - SAVE PDF</button>
+    <p class="small">Cara edit: Klik tanggal - shift - seragam langsung di tabel, langsung ke-save otomatis di HP lu.<br>Data tersimpan di browser, jadi kalau lu tutup web, jadwalnya gak hilang.</p>
   </div>
 </div>
 
 <script>
-// MATRIX
 const c=document.getElementById('matrix'),ctx=c.getContext('2d');let W,H,cols,drops;
 function rs(){W=c.width=innerWidth;H=c.height=innerHeight;cols=Math.floor(W/16);drops=Array(cols).fill(1)}rs();addEventListener('resize',rs);
-setInterval(()=>{ctx.fillStyle="rgba(0,0,0,0.08)";ctx.fillRect(0,0,W,H);ctx.fillStyle="#00ff41";ctx.font="14px monospace";drops.forEach((y,i)=>{ctx.fillText("01LOMBOKIJOANDAR<>/#"[Math.floor(Math.random()*18)],i*16,y*16);if(y*16>H&&Math.random()>0.975)drops[i]=0;drops[i]++})},50);
+setInterval(()=>{ctx.fillStyle="rgba(0,0,0,0.08)";ctx.fillRect(0,0,W,H);ctx.fillStyle="#00ff41";ctx.font="14px monospace";drops.forEach((y,i)=>{ctx.fillText("01LOMBOKIJOANDAR".charAt(Math.floor(Math.random()*16)),i*16,y*16);if(y*16>H&&Math.random()>0.975)drops[i]=0;drops[i]++})},50);
 
-// DATA AWAL NOVEMBER
+const namaBulan=["JANUARI","FEBRUARI","MARET","APRIL","MEI","JUNI","JULI","AGUSTUS","SEPTEMBER","OKTOBER","NOVEMBER","DESEMBER"];
+const namaHari=["MINGGU","SENIN","SELASA","RABU","KAMIS","JUMAT","SABTU"];
+
+function updateLive(){
+  const now=new Date();
+  const jam=String(now.getHours()).padStart(2,'0')+":"+String(now.getMinutes()).padStart(2,'0')+":"+String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('liveTime').innerText=jam+" WIB";
+  document.getElementById('liveDate').innerText=namaHari[now.getDay()]+", "+now.getDate()+" "+namaBulan[now.getMonth()]+" "+now.getFullYear();
+  const h=now.getHours();
+  let shift="OFF - ISTIRAHAT";
+  if(h>=8&&h<16) shift="SEDANG SHIFT PAGI 08:00-16:00";
+  if(h>=14&&h<22) shift="SEDANG SHIFT SIANG 14:00-22:00";
+  if((h>=10&&h<14)||(h>=17&&h<22)) shift="CEK JADWAL SPLIT HARI INI";
+  document.getElementById('liveShift').innerText="SHIFT: "+shift;
+}
+setInterval(updateLive,1000);updateLive();
+
 let jadwal=[
   ["07","SABTU","P","08:00 - 16:00","HIJAU TUA",8],["08","MINGGU","P","08:00 - 16:00","HIJAU MUDA",8],
   ["09","SENIN","SP","10:00-14:00 | 17:00-22:00","HIJAU TUA",8],["10","SELASA","P","08:00 - 16:00","HIJAU MUDA",8],
@@ -137,80 +160,65 @@ let jadwal=[
   ["29","MINGGU","P","08:00 - 16:00","HIJAU MUDA",8],["30","SENIN","SP","10:00-14:00 | 17:00-22:00","HIJAU TUA",8],
 ];
 function log(t){document.getElementById('log').innerText+="\n"+t;document.getElementById('log').scrollTop=9999}
-function save(){localStorage.setItem('jadwal_andar_v3',JSON.stringify({jadwal,bulan:document.getElementById('bulan').value,tahun:document.getElementById('tahun').value,nama:document.getElementById('namaFilter').value}))}
-function load(){const s=localStorage.getItem('jadwal_andar_v3');if(s){try{const o=JSON.parse(s);jadwal=o.jadwal;document.getElementById('bulan').value=o.bulan;document.getElementById('tahun').value=o.tahun;document.getElementById('namaFilter').value=o.nama}catch(e){}}}
+function save(){localStorage.setItem('jadwal_andar_v4',JSON.stringify({jadwal,bulan:document.getElementById('bulan').value,tahun:document.getElementById('tahun').value,nama:document.getElementById('namaFilter').value}))}
+function load(){const s=localStorage.getItem('jadwal_andar_v4');if(s){try{const o=JSON.parse(s);jadwal=o.jadwal;document.getElementById('bulan').value=o.bulan;document.getElementById('tahun').value=o.tahun;document.getElementById('namaFilter').value=o.nama}catch(e){}}}
 
-// UPLOAD PREVIEW
 document.getElementById('file').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();r.onload=ev=>{const img=document.getElementById('preview');img.src=ev.target.result;img.style.display='block';document.getElementById('dropText').innerHTML='✅ FOTO TERUPLOAD - SIAP DI-SCAN';};r.readAsDataURL(f);
+  const r=new FileReader();r.onload=ev=>{const img=document.getElementById('preview');img.src=ev.target.result;img.style.display='block';document.getElementById('dropText').innerHTML='FOTO TERUPLOAD - SIAP DI-SCAN';};r.readAsDataURL(f);
 });
 
-// SCAN OCR
 async function scanFoto(){
   const file=document.getElementById('file').files[0];
   if(!file){alert('Upload foto dulu Bang!');return}
   const nama=document.getElementById('namaFilter').value.trim().toUpperCase()||'ANDAR';
   document.getElementById('progWrap').style.display='block';
-  document.getElementById('status').innerText='🤖 AI lagi baca foto... tunggu 10-20 detik...';
-  log('> Mulai OCR... filter: '+nama);
+  document.getElementById('status').innerText='AI lagi baca foto... tunggu 10-20 detik...';
+  log('Mulai OCR... filter: '+nama);
   try{
     const {data:{text}}=await Tesseract.recognize(file,'ind+eng',{logger:m=>{if(m.status==='recognizing text'){document.getElementById('prog').style.width=Math.round(m.progress*100)+'%'}}});
     document.getElementById('rawText').value=text;
-    log('> OCR selesai. '+text.length+' karakter terbaca.');
-    log('> Parsing hanya nama '+nama+'...');
+    log('OCR selesai. '+text.length+' karakter terbaca.');
+    log('Parsing hanya nama '+nama+'...');
     parseText(text,nama);
-  }catch(e){log('> ERROR OCR: '+e.message);alert('Gagal baca foto, coba foto lebih terang / lebih dekat')}
+  }catch(e){log('ERROR OCR: '+e.message);alert('Gagal baca foto, coba foto lebih terang - lebih dekat')}
   document.getElementById('progWrap').style.display='none';
-  document.getElementById('status').innerText='✅ Selesai! Cek tabel di bawah, kalau ada salah tinggal edit.';
+  document.getElementById('status').innerText='Selesai! Cek tabel di bawah, kalau ada salah tinggal edit.';
 }
 
 function parseText(text,nama){
-  // Normalisasi
   let lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
-  // Cari baris yang mengandung nama filter, atau pola tanggal
-  // Pola yang didukung: 07 SABTU P 08:00-16:00 HIJAU TUA | 07 P | ANDAR 07 P dll
   let hasil=[];
   const hariMap={SENIN:'SENIN',SELASA:'SELASA',RABU:'RABU',KAMIS:'KAMIS',JUMAT:'JUMAT',SABTU:'SABTU',MINGGU:'MINGGU'};
-  // Kalau foto jadwalnya tabel banyak nama, kita cari blok ANDAR
-  let inAndar=false;
   let allText=text.toUpperCase();
-  // Jika ada nama di teks, filter hanya sekitar nama itu
   if(allText.includes(nama)){
-    // Ambil semua baris yang mengandung tanggal + shift
     lines.forEach(l=>{
       let u=l.toUpperCase();
-      // Lewati baris nama orang lain
-      // Kalau baris mengandung nama lain yang jelas bukan ANDAR dan mengandung huruf panjang, skip - disederhanakan: ambil baris yang ada angka tanggal 01-31 + P/S/SP/LIBUR
       let m=u.match(/\b(0?[1-9]|[12][0-9]|3[01])\b.*\b(PAGI|SIANG|SPLIT|LIBUR|\bP\b|\bS\b|\bSP\b)/);
       if(m){
-        // Tebak hari dari tanggal kalau ada, atau dari teks
         let hari='SENIN';for(let h in hariMap){if(u.includes(h)) hari=h}
-        let shift='P';if(u.includes('LIBUR')||u.includes('OFF')||u.includes('ISTIRAHAT')) shift='LIBUR';else if(u.includes('SP')||u.includes('SPLIT')) shift='SP';else if(u.includes('SIANG')||u.includes('  S ')||u.includes('14:00')) shift='S';
+        let shift='P';if(u.includes('LIBUR')||u.includes('OFF')||u.includes('ISTIRAHAT')) shift='LIBUR';else if(u.includes('SP')||u.includes('SPLIT')) shift='SP';else if(u.includes('SIANG')||u.includes('14:00')) shift='S';
         let jam=shift==='P'?'08:00 - 16:00':shift==='S'?'14:00 - 22:00':shift==='SP'?'10:00-14:00 | 17:00-22:00':'LIBUR - ISTIRAHAT';
         let seragam='HIJAU MUDA';if(u.includes('HIJAU TUA'))seragam='HIJAU TUA';else if(u.includes('BATIK'))seragam='BATIK';else if(shift==='LIBUR')seragam='OFFLINE';else if(shift==='P')seragam='HIJAU TUA';
         let tgl=m[1].padStart(2,'0');
-        // Hindari duplikat tanggal
         if(!hasil.find(x=>x[0]===tgl)) hasil.push([tgl,hari,shift,jam,seragam,shift==='LIBUR'?0:8]);
       }
     });
   }
   if(hasil.length>=3){
     jadwal=hasil.sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
-    log('> Berhasil! Ditemukan '+jadwal.length+' hari untuk '+nama);
-    // Koreksi hari otomatis berdasarkan tanggal + bulan/tahun (jika perlu, bisa manual edit)
+    log('Berhasil! Ditemukan '+jadwal.length+' hari untuk '+nama);
     document.getElementById('judulHasil').innerText=document.getElementById('bulan').value+' '+document.getElementById('tahun').value+' - '+nama;
     document.getElementById('userLabel').innerText=nama;
     render();save();
   }else{
-    log('> Gagal auto-parse. Teks terlalu buram / format beda. Silahkan edit teks mentah lalu klik PARSE ULANG, atau edit manual di tabel.');
-    alert('AI-nya bingung baca foto ini Bang, fotonya kurang jelas / format tabelnya beda. Coba foto lebih lurus & terang, atau edit teks mentah di bawah lalu klik PARSE ULANG. Tabel lama masih aman, bisa lu edit manual.');
+    log('Gagal auto-parse. Teks terlalu buram - format beda. Edit teks mentah lalu klik PARSE ULANG, atau edit manual di tabel.');
+    alert('AI-nya bingung baca foto ini Bang, fotonya kurang jelas - format tabelnya beda. Coba foto lebih lurus dan terang, atau edit teks mentah lalu klik PARSE ULANG.');
   }
 }
 function parseManual(){parseText(document.getElementById('rawText').value,document.getElementById('namaFilter').value.trim().toUpperCase()||'ANDAR')}
 function pakaiContoh(){document.getElementById('judulHasil').innerText='NOVEMBER 2026 - ANDAR';render();save();alert('Ini contoh November yang kemarin. Buat Desember, upload foto Desember lu.')}
 
-// RENDER + EDIT
 function render(){
   const q=document.getElementById('search').value.toUpperCase();
   const list=document.getElementById('list');list.innerHTML='';
@@ -218,13 +226,14 @@ function render(){
   jadwal.forEach((d,idx)=>{
     if(q && !d.join(' ').toUpperCase().includes(q)) return;
     const div=document.createElement('div');
-    div.className='row '+(d[2]==='LIBUR'?'libur':d[2]==='P'?'pagi':'');
+    div.className='row '+(d[2]==='LIBUR'?'libur':d[2]==='P'?'pagi':'')+(parseInt(d[0])===today?' today':'');
+    const isToday=parseInt(d[0])===today?' <span style="color:#ffe600;font-size:10px">● HARI INI</span>':'';
     div.innerHTML=`
       <div class="l">
-        <div class="t"><input value="${d[0]}" style="width:38px" onchange="edit(${idx},0,this.value)"> <input value="${d[1]}" style="width:90px" onchange="edit(${idx},1,this.value)"> <select style="width:80px" onchange="edit(${idx},2,this.value)"><option ${d[2]==='P'?'selected':''}>P</option><option ${d[2]==='S'?'selected':''}>S</option><option ${d[2]==='SP'?'selected':''}>SP</option><option ${d[2]==='LIBUR'?'selected':''}>LIBUR</option></select></div>
+        <div class="t"><input value="${d[0]}" style="width:38px" onchange="edit(${idx},0,this.value)"> <input value="${d[1]}" style="width:90px" onchange="edit(${idx},1,this.value)"> <select style="width:80px" onchange="edit(${idx},2,this.value)"><option ${d[2]==='P'?'selected':''}>P</option><option ${d[2]==='S'?'selected':''}>S</option><option ${d[2]==='SP'?'selected':''}>SP</option><option ${d[2]==='LIBUR'?'selected':''}>LIBUR</option></select>${isToday}</div>
         <div class="j"><input value="${d[3]}" style="width:100%" onchange="edit(${idx},3,this.value)"></div>
       </div>
-      <div class="s"><select onchange="edit(${idx},4,this.value)"><option ${d[4]==='HIJAU TUA'?'selected':''}>HIJAU TUA</option><option ${d[4]==='HIJAU MUDA'?'selected':''}>HIJAU MUDA</option><option ${d[4]==='BATIK'?'selected':''}>BATIK</option><option ${d[4]==='OFFLINE'?'selected':''}>OFFLINE</option></select><br><button onclick="hapus(${idx})" style="background:none;border:0;color:#ff7a7a;cursor:pointer;font-size:11px">✕ hapus</button></div>`;
+      <div class="s"><select onchange="edit(${idx},4,this.value)"><option ${d[4]==='HIJAU TUA'?'selected':''}>HIJAU TUA</option><option ${d[4]==='HIJAU MUDA'?'selected':''}>HIJAU MUDA</option><option ${d[4]==='BATIK'?'selected':''}>BATIK</option><option ${d[4]==='OFFLINE'?'selected':''}>OFFLINE</option></select><br><button onclick="hapus(${idx})" style="background:none;border:0;color:#ff7a7a;cursor:pointer;font-size:11px">hapus</button></div>`;
     list.appendChild(div);
   });
   const kerja=jadwal.filter(d=>d[2]!=='LIBUR').length;
@@ -238,8 +247,18 @@ function render(){
 function edit(i,col,val){jadwal[i][col]=val.toUpperCase();if(col===2){jadwal[i][3]=val==='P'?'08:00 - 16:00':val==='S'?'14:00 - 22:00':val==='SP'?'10:00-14:00 | 17:00-22:00':'LIBUR - ISTIRAHAT';jadwal[i][4]=val==='LIBUR'?'OFFLINE':jadwal[i][4];jadwal[i][5]=val==='LIBUR'?0:8}render()}
 function hapus(i){if(confirm('Hapus tanggal '+jadwal[i][0]+'?')){jadwal.splice(i,1);render()}}
 function tambahBaris(){jadwal.push(["--","SENIN","P","08:00 - 16:00","HIJAU MUDA",8]);render()}
-function resetData(){if(confirm('Reset ke November?')){localStorage.removeItem('jadwal_andar_v3');location.reload()}}
+function resetData(){if(confirm('Reset ke November?')){localStorage.removeItem('jadwal_andar_v4');location.reload()}}
 function downloadHTML(){const blob=new Blob([document.documentElement.outerHTML],{type:'text/html'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='index.html';a.click();alert('File ke-download Bang, tinggal upload ke GitHub timpa yang lama.')}
+
+function setBulanOtomatis(){
+  const sudahAda=localStorage.getItem('jadwal_andar_v4');
+  if(sudahAda) return;
+  const now=new Date();
+  document.getElementById('bulan').value=namaBulan[now.getMonth()];
+  document.getElementById('tahun').value=now.getFullYear();
+  document.getElementById('judulHasil').innerText=namaBulan[now.getMonth()]+' '+now.getFullYear()+' - ANDAR';
+}
+setBulanOtomatis();
 load();render();
 </script>
 </body>
