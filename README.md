@@ -1,4 +1,4 @@
-# `JADWAL-KERJA // AUTO-SCAN AI`
+# `JADWAL-KERJA AUTO-SCAN AI`
 
 ```text
 ┌──────────────────────────────────────────────────────────────┐
