@@ -168,83 +168,54 @@ document.getElementById('file').addEventListener('change',e=>{
   const r=new FileReader();r.onload=ev=>{const img=document.getElementById('preview');img.src=ev.target.result;img.style.display='block';document.getElementById('dropText').innerHTML='FOTO TERUPLOAD - SIAP DI-SCAN';};r.readAsDataURL(f);
 });
 
-function editDistance(a,b){
-  a=String(a).toUpperCase().replace(/[^A-Z]/g,''); b=String(b).toUpperCase().replace(/[^A-Z]/g,'');
-  const d=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
-  for(let i=0;i<=a.length;i++)d[i][0]=i; for(let j=0;j<=b.length;j++)d[0][j]=j;
-  for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
-  return d[a.length][b.length];
-}
-function wordsFromOCR(data){
-  if(Array.isArray(data.words)&&data.words.length)return data.words;
-  if(!data.tsv)return [];
-  return data.tsv.split(/\r?\n/).slice(1).map(line=>{
-    const c=line.split('\t'); if(c.length<12||!c[11].trim())return null;
-    const x=Number(c[6]),y=Number(c[7]),w=Number(c[8]),h=Number(c[9]);
-    return {text:c[11].trim(),bbox:{x0:x,y0:y,x1:x+w,y1:y+h},confidence:Number(c[10])};
-  }).filter(Boolean);
-}
-function processedCanvas(img){
-  const cv=document.createElement('canvas'); cv.width=img.naturalWidth; cv.height=img.naturalHeight;
-  const x=cv.getContext('2d',{willReadFrequently:true}); x.drawImage(img,0,0);
-  const im=x.getImageData(0,0,cv.width,cv.height),d=im.data;
-  for(let i=0;i<d.length;i+=4){const g=.299*d[i]+.587*d[i+1]+.114*d[i+2];const v=g<175?0:255;d[i]=d[i+1]=d[i+2]=v;}
-  x.putImageData(im,0,0); return cv;
-}
-function cellCanvas(img,x0,y0,x1,y1){
-  const pad=12,w=Math.max(1,x1-x0),h=Math.max(1,y1-y0),cv=document.createElement('canvas');
-  cv.width=Math.max(120,w*4+pad*2);cv.height=Math.max(120,h*4+pad*2);const c=cv.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,cv.width,cv.height);
-  c.drawImage(img,x0,y0,w,h,pad,pad,w*4,h*4);return cv;
-}
-function isRedCell(img,x0,y0,x1,y1){
-  const cv=document.createElement('canvas');cv.width=Math.max(1,x1-x0);cv.height=Math.max(1,y1-y0);const c=cv.getContext('2d',{willReadFrequently:true});c.drawImage(img,x0,y0,cv.width,cv.height,0,0,cv.width,cv.height);
-  const d=c.getImageData(0,0,cv.width,cv.height).data;let red=0,n=0;
-  for(let i=0;i<d.length;i+=16){const r=d[i],g=d[i+1],b=d[i+2];if(r>105&&r>g*1.35&&r>b*1.25)red++;n++;}return n&&red/n>.16;
-}
-function normalizeShift(text){
-  const t=String(text).toUpperCase().replace(/[^A-Z]/g,'');
-  if(t.includes('SP')||t==='5P'||t==='SB')return 'SP';
-  if(t==='S'||t==='5')return 'S';
-  if(t==='P'||t==='F')return 'P';
-  return '';
-}
 async function scanFoto(){
-  const file=document.getElementById('file').files[0],img=document.getElementById('preview');
-  if(!file){alert('Upload foto dulu Bang!');return} if(typeof Tesseract==='undefined'){alert('Library OCR gagal dimuat. Periksa internet.');return}
-  if(!img.complete||!img.naturalWidth){alert('Tunggu foto selesai dimuat.');return}
-  const nama=(document.getElementById('namaFilter').value||'ANDAR').trim().toUpperCase();
-  const status=document.getElementById('status'),bar=document.getElementById('prog');document.getElementById('progWrap').style.display='block';bar.style.width='1%';status.innerText='Mencari posisi nama '+nama+'...';
-  let worker;
+  const file=document.getElementById('file').files[0];
+  if(!file){alert('Upload foto dulu Bang!');return}
+  const nama=document.getElementById('namaFilter').value.trim().toUpperCase()||'ANDAR';
+  document.getElementById('progWrap').style.display='block';
+  document.getElementById('status').innerText='AI lagi baca foto... tunggu 10-20 detik...';
+  log('Mulai OCR... filter: '+nama);
   try{
-    worker=await Tesseract.createWorker('eng',1,{logger:m=>{if(m.status==='recognizing text'&&m.progress<1)bar.style.width=Math.max(2,Math.round(m.progress*28))+'%'}});
-    await worker.setParameters({tessedit_pageseg_mode:'11',preserve_interword_spaces:'1'});
-    const full=await worker.recognize(processedCanvas(img));document.getElementById('rawText').value=full.data.text||'';
-    const words=wordsFromOCR(full.data);let matches=words.filter(w=>{const t=String(w.text).toUpperCase().replace(/[^A-Z]/g,'');return t===nama||t.includes(nama)||editDistance(t,nama)<=1});
-    if(!matches.length){
-      await worker.setParameters({tessedit_pageseg_mode:'6'});const retry=await worker.recognize(processedCanvas(img));matches=wordsFromOCR(retry.data).filter(w=>editDistance(String(w.text).replace(/[^A-Za-z]/g,''),nama)<=1);
-    }
-    if(!matches.length)throw new Error('Nama '+nama+' belum ditemukan oleh OCR. Potong foto agar bagian WAITER/S lebih besar dan lurus.');
-    matches.sort((a,b)=>(b.confidence||0)-(a.confidence||0));const hit=matches[0],b=hit.bbox,rowH=Math.max(20,b.y1-b.y0);
-    const y0=Math.max(0,Math.round(b.y0-rowH*.28)),y1=Math.min(img.naturalHeight,Math.round(b.y1+rowH*.35));
-    const x0=Math.min(img.naturalWidth-30,Math.round(b.x1+rowH*.72)),xEnd=Math.round(img.naturalWidth*.975),cw=(xEnd-x0)/30;
-    if(cw<10)throw new Error('Baris ditemukan, tetapi batas 30 kolom tidak terbaca.');
-    await worker.setParameters({tessedit_pageseg_mode:'10',tessedit_char_whitelist:'PS5FB'});
-    const hasil=[];
-    for(let day=1;day<=30;day++){
-      const ax=Math.round(x0+(day-1)*cw+cw*.08),bx=Math.round(x0+day*cw-cw*.08);let shift='';
-      if(isRedCell(img,ax,y0,bx,y1))shift='LIBUR';
-      else{const r=await worker.recognize(cellCanvas(img,ax,y0,bx,y1));shift=normalizeShift(r.data.text);}
-      const tgl=String(day).padStart(2,'0');if(!shift){log('Tanggal '+tgl+' tidak yakin dan tidak dimasukkan.');continue}
-      const hari=namaHari[new Date(Number(document.getElementById('tahun').value),namaBulan.indexOf(document.getElementById('bulan').value.toUpperCase()),day).getDay()];
-      const jam=shift==='P'?'08:00 - 16:00':shift==='S'?'14:00 - 22:00':shift==='SP'?'10:00-14:00 | 17:00-22:00':'LIBUR - ISTIRAHAT';
-      const seragam=shift==='LIBUR'?'OFFLINE':hari==='JUMAT'?'BATIK':shift==='P'?'HIJAU TUA':'HIJAU MUDA';hasil.push([tgl,hari,shift,jam,seragam,shift==='SP'?9:shift==='LIBUR'?0:8]);
-      bar.style.width=(28+Math.round(day/30*72))+'%';status.innerText='Membaca baris '+nama+': '+day+'/30';
-    }
-    if(hasil.length<20)throw new Error('Hanya '+hasil.length+' dari 30 kolom terbaca. Foto perlu dipotong khusus bagian WAITER/S agar lebih besar.');
-    jadwal=hasil;document.getElementById('userLabel').innerText=nama;render();save();status.innerText='Selesai: '+hasil.length+' kolom terbaca. Periksa setiap tanggal sebelum dipakai.';log('Nama ditemukan pada baris WAITER/S. '+hasil.length+' kolom terbaca.');
-  }catch(e){status.innerText='Gagal: '+e.message;log('ERROR OCR: '+e.message);alert(e.message)}finally{if(worker)await worker.terminate();document.getElementById('progWrap').style.display='none'}
+    const {data:{text}}=await Tesseract.recognize(file,'ind+eng',{logger:m=>{if(m.status==='recognizing text'){document.getElementById('prog').style.width=Math.round(m.progress*100)+'%'}}});
+    document.getElementById('rawText').value=text;
+    log('OCR selesai. '+text.length+' karakter terbaca.');
+    log('Parsing hanya nama '+nama+'...');
+    parseText(text,nama);
+  }catch(e){log('ERROR OCR: '+e.message);alert('Gagal baca foto, coba foto lebih terang - lebih dekat')}
+  document.getElementById('progWrap').style.display='none';
+  document.getElementById('status').innerText='Selesai! Cek tabel di bawah, kalau ada salah tinggal edit.';
 }
 
+function parseText(text,nama){
+  let lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let hasil=[];
+  const hariMap={SENIN:'SENIN',SELASA:'SELASA',RABU:'RABU',KAMIS:'KAMIS',JUMAT:'JUMAT',SABTU:'SABTU',MINGGU:'MINGGU'};
+  let allText=text.toUpperCase();
+  if(allText.includes(nama)){
+    lines.forEach(l=>{
+      let u=l.toUpperCase();
+      let m=u.match(/\b(0?[1-9]|[12][0-9]|3[01])\b.*\b(PAGI|SIANG|SPLIT|LIBUR|\bP\b|\bS\b|\bSP\b)/);
+      if(m){
+        let hari='SENIN';for(let h in hariMap){if(u.includes(h)) hari=h}
+        let shift='P';if(u.includes('LIBUR')||u.includes('OFF')||u.includes('ISTIRAHAT')) shift='LIBUR';else if(u.includes('SP')||u.includes('SPLIT')) shift='SP';else if(u.includes('SIANG')||u.includes('14:00')) shift='S';
+        let jam=shift==='P'?'08:00 - 16:00':shift==='S'?'14:00 - 22:00':shift==='SP'?'10:00-14:00 | 17:00-22:00':'LIBUR - ISTIRAHAT';
+        let seragam='HIJAU MUDA';if(u.includes('HIJAU TUA'))seragam='HIJAU TUA';else if(u.includes('BATIK'))seragam='BATIK';else if(shift==='LIBUR')seragam='OFFLINE';else if(shift==='P')seragam='HIJAU TUA';
+        let tgl=m[1].padStart(2,'0');
+        if(!hasil.find(x=>x[0]===tgl)) hasil.push([tgl,hari,shift,jam,seragam,shift==='LIBUR'?0:8]);
+      }
+    });
+  }
+  if(hasil.length>=3){
+    jadwal=hasil.sort((a,b)=>parseInt(a[0])-parseInt(b[0]));
+    log('Berhasil! Ditemukan '+jadwal.length+' hari untuk '+nama);
+    document.getElementById('judulHasil').innerText=document.getElementById('bulan').value+' '+document.getElementById('tahun').value+' - '+nama;
+    document.getElementById('userLabel').innerText=nama;
+    render();save();
+  }else{
+    log('Gagal auto-parse. Teks terlalu buram - format beda. Edit teks mentah lalu klik PARSE ULANG, atau edit manual di tabel.');
+    alert('AI-nya bingung baca foto ini Bang, fotonya kurang jelas - format tabelnya beda. Coba foto lebih lurus dan terang, atau edit teks mentah lalu klik PARSE ULANG.');
+  }
+}
 function parseManual(){parseText(document.getElementById('rawText').value,document.getElementById('namaFilter').value.trim().toUpperCase()||'ANDAR')}
 function pakaiContoh(){document.getElementById('judulHasil').innerText='NOVEMBER 2026 - ANDAR';render();save();alert('Ini contoh November yang kemarin. Buat Desember, upload foto Desember lu.')}
 
